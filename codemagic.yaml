@@ -54,23 +54,29 @@ workflows:
           fi
 
           echo "[patch] found: $FILE"
-          echo "[patch] permissions: $(ls -la "$FILE")"
-          echo "[patch] occurrences of isiOSAppOnVision: $(grep -c isiOSAppOnVision "$FILE" || true)"
+          echo "[patch] all isiOSAppOnVision lines before patch:"
+          grep -n "isiOSAppOnVision" "$FILE" || true
 
-          # Flutter sets pub-cache files to 444 (read-only). Make writable first.
           chmod u+w "$FILE"
-          echo "[patch] chmod done: $(ls -la "$FILE")"
 
-          # In-place substitution: replace only the property-access expression.
-          # isiOSAppOnVision is always NO on iPhone (visionOS-only property).
-          perl -pi -e 's/\[NSProcessInfo processInfo\]\.isiOSAppOnVision/NO/g' "$FILE"
+          # The actual code in device_info_plus-12.4.0 uses ObjC message-send syntax:
+          #   [info isiOSAppOnVision]   (where 'info' is an NSProcessInfo* local var)
+          # NOT dot-notation [NSProcessInfo processInfo].isiOSAppOnVision.
+          # Xcode 26 rejects the selector because isiOSAppOnVision is visionOS-only
+          # and not declared in the iOS 26 SDK headers.
+          # Replace the ObjC message send with NO — always NO on iPhone anyway.
+          perl -pi -e 's/\[\w+\s+isiOSAppOnVision\]/NO/g' "$FILE"
 
-          REMAINING=$(grep -c "isiOSAppOnVision" "$FILE" || true)
-          echo "[patch] occurrences remaining: $REMAINING"
+          echo "[patch] all isiOSAppOnVision lines after patch:"
+          grep -n "isiOSAppOnVision" "$FILE" || true
+
+          # Verify: only the ObjC method CALL form is dangerous.
+          # Variable names and dict keys (@"isiOSAppOnVision") are fine and will remain.
+          REMAINING=$(grep -cE '\[\w+ isiOSAppOnVision\]' "$FILE" || true)
+          echo "[patch] dangerous method-call occurrences remaining: $REMAINING"
 
           if [ "$REMAINING" -gt "0" ]; then
-            echo "[patch] FAILED – isiOSAppOnVision still present in $FILE"
-            grep -n "isiOSAppOnVision" "$FILE"
+            echo "[patch] FAILED – ObjC message-send call still present"
             exit 1
           fi
 
@@ -128,7 +134,8 @@ workflows:
 
       - name: Patch device_info_plus for Xcode 26
         script: |
-          python3 -c "import os,glob; T='[NSProcessInfo processInfo].isiOSAppOnVision'; fs=glob.glob(os.path.expanduser('~/.pub-cache/hosted/pub.dev/device_info_plus-*/ios/device_info_plus/Sources/device_info_plus/FPPDeviceInfoPlusPlugin.m')); print('[patch]',len(fs),'file(s) found'); [open(f,'w').write(open(f).read().replace(T,'NO')) or print('[patch] patched:',f) for f in fs if T in open(f).read()]; print('[patch] done')"
+          FILE=$(find "$HOME/.pub-cache" -name "FPPDeviceInfoPlusPlugin.m" -type f | head -1)
+          [ -n "$FILE" ] && chmod u+w "$FILE" && perl -pi -e 's/\[\w+\s+isiOSAppOnVision\]/NO/g' "$FILE" && echo "[patch] done: $FILE" || echo "[patch] file not found"
 
       - name: Build signed IPA
         script: |
