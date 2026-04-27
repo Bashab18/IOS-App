@@ -11,7 +11,7 @@ workflows:
 
     environment:
       flutter: stable
-      xcode: latest
+      xcode: 17      # iOS 26 SDK ships with Xcode 17
       cocoapods: default
 
     cache:
@@ -63,7 +63,7 @@ workflows:
 
     environment:
       flutter: stable
-      xcode: latest
+      xcode: 17      # iOS 26 SDK ships with Xcode 17
       cocoapods: default
       ios_signing:
         distribution_type: app_store

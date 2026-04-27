@@ -1,5 +1,5 @@
-# workmanager_apple requires iOS 14.0+
-platform :ios, '14.0'
+# iOS 16.0 — minimum supported by iOS 26 devices (iPhone XS and later)
+platform :ios, '16.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -41,7 +41,7 @@ post_install do |installer|
     flutter_additional_ios_build_settings(target)
     # Enforce minimum deployment target across all pods to satisfy workmanager_apple
     target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
     end
   end
 end

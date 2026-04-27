@@ -4,7 +4,7 @@ publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.7.2
+  sdk: '>=3.7.2 <4.0.0'
 
 dependencies:
   flutter:
@@ -31,7 +31,7 @@ dependencies:
   youtube_player_iframe: ^5.2.2  # Cross-platform YouTube player (iOS + Android)
 
   # ── Web / Browser ────────────────────────────────────────────────
-  flutter_inappwebview: ^6.1.5  # In-app ChatGPT webview
+  flutter_inappwebview: ^6.1.5  # In-app ChatGPT webview (WKWebView / iOS 26 WebKit)
   url_launcher: ^6.3.2          # Open external links in system browser
 
   # ── Data Parsing ─────────────────────────────────────────────────
