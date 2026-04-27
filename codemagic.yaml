@@ -43,10 +43,38 @@ workflows:
 
       - name: Patch device_info_plus for Xcode 26
         script: |
-          echo "[patch] locating FPPDeviceInfoPlusPlugin.m in pub cache..."
-          find "$HOME/.pub-cache" -name "FPPDeviceInfoPlusPlugin.m" -print \
-            -exec perl -pi -e 's/\[NSProcessInfo processInfo\]\.isiOSAppOnVision/NO/g' {} \;
-          echo "[patch] done"
+          set -e
+          echo "[patch] searching for FPPDeviceInfoPlusPlugin.m ..."
+          FILE=$(find "$HOME/.pub-cache" -name "FPPDeviceInfoPlusPlugin.m" -type f | head -1)
+
+          if [ -z "$FILE" ]; then
+            echo "[patch] ERROR: file not found – dumping device_info entries:"
+            find "$HOME/.pub-cache" -path "*device_info*" | head -30 || true
+            exit 1
+          fi
+
+          echo "[patch] found: $FILE"
+          echo "[patch] permissions: $(ls -la "$FILE")"
+          echo "[patch] occurrences of isiOSAppOnVision: $(grep -c isiOSAppOnVision "$FILE" || true)"
+
+          # Flutter sets pub-cache files to 444 (read-only). Make writable first.
+          chmod u+w "$FILE"
+          echo "[patch] chmod done: $(ls -la "$FILE")"
+
+          # In-place substitution: replace only the property-access expression.
+          # isiOSAppOnVision is always NO on iPhone (visionOS-only property).
+          perl -pi -e 's/\[NSProcessInfo processInfo\]\.isiOSAppOnVision/NO/g' "$FILE"
+
+          REMAINING=$(grep -c "isiOSAppOnVision" "$FILE" || true)
+          echo "[patch] occurrences remaining: $REMAINING"
+
+          if [ "$REMAINING" -gt "0" ]; then
+            echo "[patch] FAILED – isiOSAppOnVision still present in $FILE"
+            grep -n "isiOSAppOnVision" "$FILE"
+            exit 1
+          fi
+
+          echo "[patch] SUCCESS – $FILE patched cleanly"
 
       - name: Build iOS profile (no codesign)
         script: |
