@@ -43,11 +43,10 @@ workflows:
 
       - name: Patch device_info_plus for Xcode 26
         script: |
-          # device_info_plus <=12.4.0 calls [NSProcessInfo processInfo].isiOSAppOnVision
-          # without an SDK guard. Xcode 26 rejects this. Replace only the property-access
-          # token so surrounding code structure (if-blocks, braces) stays intact.
-          # Written as a one-liner to avoid YAML heredoc indentation conflicts.
-          python3 -c "import os,glob; T='[NSProcessInfo processInfo].isiOSAppOnVision'; fs=glob.glob(os.path.expanduser('~/.pub-cache/hosted/pub.dev/device_info_plus-*/ios/device_info_plus/Sources/device_info_plus/FPPDeviceInfoPlusPlugin.m')); print('[patch]',len(fs),'file(s) found'); [open(f,'w').write(open(f).read().replace(T,'NO')) or print('[patch] patched:',f) for f in fs if T in open(f).read()]; print('[patch] done')"
+          echo "[patch] locating FPPDeviceInfoPlusPlugin.m in pub cache..."
+          find "$HOME/.pub-cache" -name "FPPDeviceInfoPlusPlugin.m" -print \
+            -exec perl -pi -e 's/\[NSProcessInfo processInfo\]\.isiOSAppOnVision/NO/g' {} \;
+          echo "[patch] done"
 
       - name: Build iOS profile (no codesign)
         script: |
