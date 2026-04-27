@@ -8,11 +8,16 @@ import workmanager_apple
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    // Register workmanager background task identifiers with BGTaskScheduler
-    WorkmanagerPlugin.registerTask(withIdentifier: "be.tramckrijte.workmanager.iOSBackgroundAppRefresh")
-    WorkmanagerPlugin.registerTask(withIdentifier: "be.tramckrijte.workmanager.iOSBackgroundProcessingTask")
-    WorkmanagerPlugin.registerTask(withIdentifier: "syncHealthData")
-    WorkmanagerPlugin.registerTask(withIdentifier: "syncYesterdayHealthData")
+    // iOSBackgroundAppRefresh is a BGAppRefreshTask — system-managed,
+    // no explicit registration required.
+
+    // Register BGProcessingTask identifiers with BGTaskScheduler.
+    // Must be called before the end of application(_:didFinishLaunchingWithOptions:).
+    WorkmanagerPlugin.registerBGProcessingTask(
+      withIdentifier: "be.tramckrijte.workmanager.iOSBackgroundProcessingTask"
+    )
+    WorkmanagerPlugin.registerBGProcessingTask(withIdentifier: "syncHealthData")
+    WorkmanagerPlugin.registerBGProcessingTask(withIdentifier: "syncYesterdayHealthData")
 
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
