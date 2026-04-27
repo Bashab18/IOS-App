@@ -108,7 +108,6 @@ class HealthParameters {
     HealthDataType.WEIGHT,
     HealthDataType.RESTING_HEART_RATE,
     HealthDataType.EXERCISE_TIME,
-    HealthDataType.DISTANCE_DELTA,
     // HealthDataType.MOVE_MINUTES,
   ];
 

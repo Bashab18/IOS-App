@@ -28,11 +28,10 @@ class ExercisePage extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final textScale = screenWidth / 375;
 
-    return WillPopScope(
-      // This catches system back + swipe back
-      onWillPop: () async {
-        _goBackToHome(context);
-        return false; // ⛔ Don't let Flutter pop this route automatically
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _goBackToHome(context);
       },
       child: Scaffold(
         backgroundColor: Colors.white,
