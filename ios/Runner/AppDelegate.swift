@@ -1,6 +1,6 @@
 import Flutter
 import UIKit
-import workmanager
+// WorkmanagerPlugin is an Objective-C class — imported via Runner-Bridging-Header.h
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
