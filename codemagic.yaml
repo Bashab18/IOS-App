@@ -1,18 +1,20 @@
 workflows:
 
   # ───────────────────────────────────────────────────────────────────
-  # 1.  iOS Debug – compile check (no codesigning required)
+  # 1.  iOS Profile – sideload build (no codesigning required)
   #
-  #     Uses Xcode 26 + Flutter 3.38.6 which is the minimum configuration
-  #     required for App Store submissions from 28 April 2026 onwards
-  #     (Apple mandate: must build with Xcode 26 + iOS 26 SDK).
+  #     Profile mode = release-like performance but with observatory
+  #     disabled. Unlike debug builds, profile apps CAN be launched
+  #     from the iOS home screen (debug mode is blocked on iOS 14+).
   #
-  #     Flutter 3.38.6 is the minimum version that contains the engine-
-  #     level WKWebView hitTest fix for the iOS 26 WebKit touch bug
-  #     (affects flutter_inappwebview / youtube_player_iframe).
+  #     Use this workflow to get an unsigned .app → convert to IPA →
+  #     sign with Sideloadly/AltStore using a free Apple ID.
+  #
+  #     Uses Xcode 26 + Flutter 3.38.6 — required for App Store
+  #     submissions from 28 April 2026 and for the iOS 26 WebKit fix.
   # ───────────────────────────────────────────────────────────────────
-  ios-debug:
-    name: "iOS Debug (compile check)"
+  ios-profile:
+    name: "iOS Profile (sideload / device test)"
     instance_type: mac_mini_m2
     max_build_duration: 60
 
@@ -36,13 +38,10 @@ workflows:
       - name: Get Flutter packages
         script: flutter pub get
 
-      - name: Upgrade Flutter packages to latest compatible versions
-        script: flutter pub upgrade --major-versions || true
-
-      - name: Build iOS debug (no codesign)
+      - name: Build iOS profile (no codesign)
         script: |
           flutter build ios \
-            --debug \
+            --profile \
             --no-codesign \
             --verbose
 
