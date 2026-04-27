@@ -45,6 +45,13 @@ dependencies:
   csv: ^6.0.0             # csv 8.x removed CsvToListConverter — stay on 6.x
   crypto: ^3.0.7          # SHA-256 password hashing (Dart-only)
 
+  # ── Transitive overrides ──────────────────────────────────────────
+  # device_info_plus is pulled in by health / permission_handler.
+  # Pinning here lets pub resolve the latest patch (≥12.4.0) which may
+  # contain the Xcode 26 isiOSAppOnVision fix; the Podfile post_install
+  # patch is the guaranteed fallback if it hasn't been released yet.
+  device_info_plus: ^12.4.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
