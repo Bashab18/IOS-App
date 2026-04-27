@@ -35,7 +35,7 @@ dependencies:
   url_launcher: ^6.3.2          # Open external links in system browser
 
   # ── Data Parsing ─────────────────────────────────────────────────
-  csv: ^8.0.0             # Parse exercise CSV data file
+  csv: ^6.0.0             # Parse exercise CSV data file (8.x removed CsvToListConverter)
   crypto: ^3.0.7          # SHA-256 password hashing
 
 dev_dependencies:
