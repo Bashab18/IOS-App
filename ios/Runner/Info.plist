@@ -72,7 +72,7 @@
 		<string>syncYesterdayHealthData</string>
 	</array>
 
-	<!-- UIScene lifecycle (Flutter 3.x / iOS 13+) -->
+	<!-- UIScene lifecycle — mandatory from iOS 26 (crashes on iOS 27 without it) -->
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -84,6 +84,7 @@
 				<dict>
 					<key>UISceneClassName</key>
 					<string>UIWindowScene</string>
+					<!-- Use module-qualified name so Xcode 26 linker resolves it correctly -->
 					<key>UISceneDelegateClassName</key>
 					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
 					<key>UISceneConfigurationName</key>
@@ -94,5 +95,10 @@
 			</array>
 		</dict>
 	</dict>
+
+	<!-- App Store encryption compliance — mHealth uses only Apple's built-in
+	     HTTPS/TLS (no custom encryption), so this is exempt from export rules. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

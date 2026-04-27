@@ -1,7 +1,9 @@
-# iOS 16.0 — minimum supported by iOS 26 devices (iPhone XS and later)
+# iOS 16.0 — minimum for iOS 26 era devices (iPhone XS and later)
+# Xcode 26 / iOS 26 SDK requires iOS 13+ to build; 16.0 ensures arm64-only
+# and aligns with the device range iOS 26 itself supports.
 platform :ios, '16.0'
 
-# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
+# CocoaPods analytics sends network stats synchronously, affecting build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
 project 'Runner', {
@@ -39,9 +41,28 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
-    # Enforce minimum deployment target across all pods to satisfy workmanager_apple
+
     target.build_configurations.each do |config|
+      # ── Deployment target ──────────────────────────────────────────
+      # Enforce across all pods so workmanager_apple and others don't
+      # raise a "requires higher minimum iOS version" error.
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+
+      # ── Bitcode ────────────────────────────────────────────────────
+      # Bitcode was deprecated in Xcode 14, fully removed in Xcode 26.
+      # Explicitly disable to prevent linker warnings.
+      config.build_settings['ENABLE_BITCODE'] = 'NO'
+
+      # ── Swift concurrency (Xcode 26 / Swift 6) ─────────────────────
+      # Suppress strict concurrency errors in pod targets that have not
+      # yet migrated to Swift 6. Our own code uses SWIFT_STRICT_CONCURRENCY
+      # = minimal (set in project.pbxproj).
+      config.build_settings['SWIFT_STRICT_CONCURRENCY'] = 'minimal'
+
+      # ── Module stability (arm64 simulator on Apple Silicon) ─────────
+      # Required so Swift pods expose stable ABI when built for
+      # arm64-iphonesimulator on M-series Macs (Codemagic mac_mini_m2).
+      config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
     end
   end
 end

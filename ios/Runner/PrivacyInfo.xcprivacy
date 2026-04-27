@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  Privacy Manifest — required for App Store submissions (iOS 17+, enforced from May 2024).
+	  Declared "required reason" APIs used directly by this app and its native SDK dependencies.
+	  Ref: https://developer.apple.com/documentation/bundleresources/privacy_manifest_files
+	-->
+
+	<!-- ── Data types collected ──────────────────────────────────────────── -->
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array>
+		<!-- Health data read from HealthKit (displayed on-device, never uploaded) -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeHealth</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+	</array>
+
+	<!-- ── Required reason APIs ──────────────────────────────────────────── -->
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+
+		<!--
+		  UserDefaults — used by shared_preferences to persist app settings
+		  and login state (theme, language, last-sync timestamp, etc.)
+		  Reason: CA92.1 — access user defaults owned by this app
+		-->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+
+		<!--
+		  File timestamps — used by sqflite / SQLite when creating or
+		  modifying the local health database file.
+		  Reason: C617.1 — read/write timestamps on files created by this app
+		-->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>C617.1</string>
+			</array>
+		</dict>
+
+		<!--
+		  Disk space — used by sqflite to check available space before
+		  writing health records to the SQLite database.
+		  Reason: E174.1 — check available disk space before writing data
+		-->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>E174.1</string>
+			</array>
+		</dict>
+
+		<!--
+		  System boot time — used by workmanager when computing next
+		  BGTaskScheduler fire time relative to device uptime.
+		  Reason: 35F9.1 — calculate elapsed time for background scheduling
+		-->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>35F9.1</string>
+			</array>
+		</dict>
+
+	</array>
+
+	<!-- App does not track users across apps/websites -->
+	<key>NSPrivacyTracking</key>
+	<false/>
+
+	<!-- No tracking domains -->
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+
+</dict>
+</plist>

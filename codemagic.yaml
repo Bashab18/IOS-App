@@ -2,7 +2,14 @@ workflows:
 
   # ───────────────────────────────────────────────────────────────────
   # 1.  iOS Debug – compile check (no codesigning required)
-  #     Runs on every push to verify the app builds cleanly on macOS.
+  #
+  #     Uses Xcode 26 + Flutter 3.38.6 which is the minimum configuration
+  #     required for App Store submissions from 28 April 2026 onwards
+  #     (Apple mandate: must build with Xcode 26 + iOS 26 SDK).
+  #
+  #     Flutter 3.38.6 is the minimum version that contains the engine-
+  #     level WKWebView hitTest fix for the iOS 26 WebKit touch bug
+  #     (affects flutter_inappwebview / youtube_player_iframe).
   # ───────────────────────────────────────────────────────────────────
   ios-debug:
     name: "iOS Debug (compile check)"
@@ -10,8 +17,8 @@ workflows:
     max_build_duration: 60
 
     environment:
-      flutter: stable
-      xcode: 17      # iOS 26 SDK ships with Xcode 17
+      flutter: 3.38.6  # minimum for iOS 26 WebKit touch fix (engine-level WKWebView hitTest)
+      xcode: 26        # iOS 26 SDK — Apple aligned Xcode version numbers at WWDC25
       cocoapods: default
 
     cache:
@@ -28,6 +35,9 @@ workflows:
 
       - name: Get Flutter packages
         script: flutter pub get
+
+      - name: Upgrade Flutter packages to latest compatible versions
+        script: flutter pub upgrade --major-versions || true
 
       - name: Build iOS debug (no codesign)
         script: |
@@ -62,8 +72,8 @@ workflows:
     max_build_duration: 120
 
     environment:
-      flutter: stable
-      xcode: 17      # iOS 26 SDK ships with Xcode 17
+      flutter: 3.38.6  # minimum for iOS 26 WebKit touch fix (engine-level WKWebView hitTest)
+      xcode: 26        # iOS 26 SDK — required for App Store submissions from 28 Apr 2026
       cocoapods: default
       ios_signing:
         distribution_type: app_store
@@ -106,7 +116,7 @@ workflows:
     max_build_duration: 60
 
     environment:
-      flutter: stable
+      flutter: 3.38.6
 
     cache:
       cache_paths:
@@ -137,7 +147,7 @@ workflows:
     max_build_duration: 60
 
     environment:
-      flutter: stable
+      flutter: 3.38.6
       android_signing:
         - keystore_reference
       vars:

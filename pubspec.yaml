@@ -11,32 +11,39 @@ dependencies:
     sdk: flutter
 
   # ── Data / Storage ───────────────────────────────────────────────
-  sqflite: ^2.4.2         # SQLite local database
-  path: ^1.9.1            # File-system path utilities (used with sqflite)
-  shared_preferences: ^2.5.5  # Lightweight key-value persistence
+  sqflite: ^2.4.2         # SQLite local database (PrivacyInfo.xcprivacy covers file APIs)
+  path: ^1.9.1            # File-system path utilities
+  shared_preferences: ^2.5.5  # Lightweight key-value persistence (UserDefaults → PrivacyInfo)
   uuid: ^4.5.3            # UUID generation for DB primary keys
 
   # ── Health / Sensors ─────────────────────────────────────────────
+  # v13.3.1 = latest stable; iOS 26 new HealthKit types (medications, mental
+  # health questionnaires) are not yet in the Dart wrapper — update to v14.x
+  # when published by carp.dk.
   health: ^13.3.1         # Apple HealthKit + Android Health Connect
   permission_handler: ^12.0.1  # Runtime permission requests
 
   # ── Background Tasks ─────────────────────────────────────────────
+  # workmanager_apple ships its own PrivacyInfo.xcprivacy since v0.8.0
   workmanager: ^0.9.0     # Background sync (BGTaskScheduler on iOS)
 
   # ── UI / Charts ──────────────────────────────────────────────────
   fl_chart: ^1.2.0        # Activity statistics line/bar charts
-  intl: ^0.20.2           # Date/number formatting
+  intl: ^0.20.2           # Date/number formatting (Dart-only)
 
   # ── Media ────────────────────────────────────────────────────────
-  youtube_player_iframe: ^5.2.2  # Cross-platform YouTube player (iOS + Android)
+  youtube_player_iframe: ^5.2.2  # YouTube player (delegates to webview_flutter)
 
   # ── Web / Browser ────────────────────────────────────────────────
-  flutter_inappwebview: ^6.1.5  # In-app ChatGPT webview (WKWebView / iOS 26 WebKit)
+  # iOS 26 WebKit touch bug is fixed in the Flutter 3.38.6 engine — no
+  # flutter_inappwebview code change needed, just pin Flutter ≥3.38.6
+  # in codemagic.yaml. Watch for 6.2.0 stable for SPM + further fixes.
+  flutter_inappwebview: ^6.1.5  # In-app ChatGPT webview (WKWebView)
   url_launcher: ^6.3.2          # Open external links in system browser
 
   # ── Data Parsing ─────────────────────────────────────────────────
-  csv: ^6.0.0             # Parse exercise CSV data file (8.x removed CsvToListConverter)
-  crypto: ^3.0.7          # SHA-256 password hashing
+  csv: ^6.0.0             # csv 8.x removed CsvToListConverter — stay on 6.x
+  crypto: ^3.0.7          # SHA-256 password hashing (Dart-only)
 
 dev_dependencies:
   flutter_test:
