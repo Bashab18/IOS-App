@@ -26,7 +26,10 @@ workflows:
     cache:
       cache_paths:
         - $CM_BUILD_DIR/ios/Pods
-        - $HOME/.pub-cache
+        # NOTE: pub-cache intentionally NOT cached — device_info_plus 12.4.0
+        # ships an unpatched .m file; caching would restore the unpatched copy
+        # and defeat the patch step below. Remove this comment once the package
+        # releases a Xcode-26-compatible version.
 
     scripts:
       - name: Print environment
@@ -41,16 +44,52 @@ workflows:
       - name: Patch device_info_plus for Xcode 26
         script: |
           # device_info_plus <=12.4.0 calls [NSProcessInfo processInfo].isiOSAppOnVision
-          # without an SDK availability guard. Xcode 26 treats this as a hard error.
-          # CocoaPods compiles directly from the pub cache (not the Pods dir), so we
-          # must patch the source file here — after pub get, before flutter build.
-          # On iPhone, isiOSAppOnVision is always NO (only relevant on visionOS).
-          find "$HOME/.pub-cache" -path "*/device_info_plus*/FPPDeviceInfoPlusPlugin.m" | while read f; do
-            if grep -q "isiOSAppOnVision" "$f"; then
-              sed -i '' '/isiOSAppOnVision/c\    data[@"isiOSAppOnVision"] = @NO; \/\/ Xcode 26 patch' "$f"
-              echo "Patched isiOSAppOnVision in $f"
-            fi
-          done
+          # without a compile-time SDK availability guard. Xcode 26 treats this as a
+          # hard error. CocoaPods compiles directly from ~/.pub-cache, so the patch must
+          # happen here — after pub get, before flutter build.
+          # isiOSAppOnVision is always NO on iPhone (only relevant on visionOS).
+          python3 - <<'PYEOF'
+          import os, glob, sys
+
+          pattern = os.path.expanduser(
+              "~/.pub-cache/hosted/pub.dev/device_info_plus-*"
+              "/ios/device_info_plus/Sources/device_info_plus/FPPDeviceInfoPlusPlugin.m"
+          )
+          files = glob.glob(pattern)
+          print(f"[patch] searching: {pattern}")
+          print(f"[patch] found {len(files)} file(s)")
+
+          if not files:
+              print("[patch] ERROR: FPPDeviceInfoPlusPlugin.m not found — dumping pub-cache tree:")
+              for root, dirs, names in os.walk(os.path.expanduser("~/.pub-cache/hosted/pub.dev")):
+                  for name in names:
+                      if "device_info" in name.lower() or "FPPDevice" in name:
+                          print(" ", os.path.join(root, name))
+              sys.exit(1)
+
+          for filepath in files:
+              with open(filepath, "r") as fh:
+                  lines = fh.readlines()
+
+              changed = False
+              out = []
+              for line in lines:
+                  if "isiOSAppOnVision" in line:
+                      replacement = '    data[@"isiOSAppOnVision"] = @NO; // Xcode 26 patch: not in SDK at iOS 16 target\n'
+                      out.append(replacement)
+                      print(f"[patch]   replaced: {line.rstrip()}")
+                      print(f"[patch]       with: {replacement.rstrip()}")
+                      changed = True
+                  else:
+                      out.append(line)
+
+              if changed:
+                  with open(filepath, "w") as fh:
+                      fh.writelines(out)
+                  print(f"[patch] SUCCESS: wrote patched file → {filepath}")
+              else:
+                  print(f"[patch] already clean (no isiOSAppOnVision found): {filepath}")
+          PYEOF
 
       - name: Build iOS profile (no codesign)
         script: |
@@ -85,8 +124,8 @@ workflows:
     max_build_duration: 120
 
     environment:
-      flutter: 3.38.6  # minimum for iOS 26 WebKit touch fix (engine-level WKWebView hitTest)
-      xcode: 26        # iOS 26 SDK — required for App Store submissions from 28 Apr 2026
+      flutter: 3.38.6
+      xcode: 26
       cocoapods: default
       ios_signing:
         distribution_type: app_store
@@ -97,7 +136,6 @@ workflows:
     cache:
       cache_paths:
         - $CM_BUILD_DIR/ios/Pods
-        - $HOME/.pub-cache
 
     scripts:
       - name: Get Flutter packages
@@ -105,12 +143,39 @@ workflows:
 
       - name: Patch device_info_plus for Xcode 26
         script: |
-          find "$HOME/.pub-cache" -path "*/device_info_plus*/FPPDeviceInfoPlusPlugin.m" | while read f; do
-            if grep -q "isiOSAppOnVision" "$f"; then
-              sed -i '' '/isiOSAppOnVision/c\    data[@"isiOSAppOnVision"] = @NO; \/\/ Xcode 26 patch' "$f"
-              echo "Patched isiOSAppOnVision in $f"
-            fi
-          done
+          python3 - <<'PYEOF'
+          import os, glob, sys
+
+          pattern = os.path.expanduser(
+              "~/.pub-cache/hosted/pub.dev/device_info_plus-*"
+              "/ios/device_info_plus/Sources/device_info_plus/FPPDeviceInfoPlusPlugin.m"
+          )
+          files = glob.glob(pattern)
+          print(f"[patch] found {len(files)} file(s)")
+
+          if not files:
+              print("[patch] ERROR: FPPDeviceInfoPlusPlugin.m not found")
+              sys.exit(1)
+
+          for filepath in files:
+              with open(filepath, "r") as fh:
+                  lines = fh.readlines()
+              changed = False
+              out = []
+              for line in lines:
+                  if "isiOSAppOnVision" in line:
+                      out.append('    data[@"isiOSAppOnVision"] = @NO; // Xcode 26 patch\n')
+                      print(f"[patch] replaced line in {filepath}")
+                      changed = True
+                  else:
+                      out.append(line)
+              if changed:
+                  with open(filepath, "w") as fh:
+                      fh.writelines(out)
+                  print(f"[patch] SUCCESS: {filepath}")
+              else:
+                  print(f"[patch] already clean: {filepath}")
+          PYEOF
 
       - name: Build signed IPA
         script: |
