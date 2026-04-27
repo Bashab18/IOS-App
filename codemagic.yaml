@@ -1,0 +1,177 @@
+workflows:
+
+  # ───────────────────────────────────────────────────────────────────
+  # 1.  iOS Debug – compile check (no codesigning required)
+  #     Runs on every push to verify the app builds cleanly on macOS.
+  # ───────────────────────────────────────────────────────────────────
+  ios-debug:
+    name: "iOS Debug (compile check)"
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+
+    cache:
+      cache_paths:
+        - $CM_BUILD_DIR/ios/Pods
+        - $HOME/.pub-cache
+
+    scripts:
+      - name: Print environment
+        script: |
+          flutter --version
+          xcodebuild -version
+          pod --version
+
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      - name: Build iOS debug (no codesign)
+        script: |
+          flutter build ios \
+            --debug \
+            --no-codesign \
+            --verbose
+
+    artifacts:
+      - build/ios/iphoneos/Runner.app
+
+  # ───────────────────────────────────────────────────────────────────
+  # 2.  iOS Release → TestFlight / App Store
+  #
+  #     Before enabling this workflow you must configure in the
+  #     Codemagic dashboard (App settings → Environment variables):
+  #
+  #       APP_STORE_CONNECT_PRIVATE_KEY       – contents of .p8 API key file
+  #       APP_STORE_CONNECT_KEY_IDENTIFIER    – 10-char key ID
+  #       APP_STORE_CONNECT_ISSUER_ID         – UUID from App Store Connect
+  #
+  #     And in App settings → Code signing (iOS):
+  #       • Distribution certificate (.p12) + password
+  #       • App Store provisioning profile for com.example.mhealthapp
+  #         (must include HealthKit capability)
+  #
+  #     Bundle ID: com.example.mhealthapp  ← update before first release
+  # ───────────────────────────────────────────────────────────────────
+  ios-release:
+    name: "iOS Release (TestFlight)"
+    instance_type: mac_mini_m2
+    max_build_duration: 120
+
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.example.mhealthapp
+      vars:
+        BUNDLE_ID: com.example.mhealthapp
+
+    cache:
+      cache_paths:
+        - $CM_BUILD_DIR/ios/Pods
+        - $HOME/.pub-cache
+
+    scripts:
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      - name: Build signed IPA
+        script: |
+          flutter build ipa \
+            --release \
+            --export-options-plist=$CM_EXPORT_OPTIONS_PATH
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
+
+  # ───────────────────────────────────────────────────────────────────
+  # 3.  Android Debug APK
+  # ───────────────────────────────────────────────────────────────────
+  android-debug:
+    name: "Android Debug APK"
+    instance_type: linux_x2
+    max_build_duration: 60
+
+    environment:
+      flutter: stable
+
+    cache:
+      cache_paths:
+        - $HOME/.pub-cache
+        - $HOME/.gradle/caches
+
+    scripts:
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      - name: Build debug APK
+        script: flutter build apk --debug
+
+    artifacts:
+      - build/app/outputs/flutter-apk/app-debug.apk
+
+  # ───────────────────────────────────────────────────────────────────
+  # 4.  Android Release AAB (Google Play)
+  #
+  #     Requires in Codemagic dashboard:
+  #       CM_KEYSTORE        – base64-encoded .jks keystore
+  #       CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD
+  #       GPLAY_SERVICE_ACCOUNT_CREDENTIALS – JSON key for Play API
+  # ───────────────────────────────────────────────────────────────────
+  android-release:
+    name: "Android Release (Google Play)"
+    instance_type: linux_x2
+    max_build_duration: 60
+
+    environment:
+      flutter: stable
+      android_signing:
+        - keystore_reference
+      vars:
+        PACKAGE_NAME: com.example.mhealthapp
+
+    cache:
+      cache_paths:
+        - $HOME/.pub-cache
+        - $HOME/.gradle/caches
+
+    scripts:
+      - name: Set up keystore
+        script: |
+          echo $CM_KEYSTORE | base64 --decode > /tmp/release.keystore
+          cat >> "$CM_BUILD_DIR/android/key.properties" << EOF
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=/tmp/release.keystore
+          EOF
+
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      - name: Build release AAB
+        script: |
+          flutter build appbundle \
+            --release
+
+    artifacts:
+      - build/app/outputs/bundle/release/app-release.aab
+
+    publishing:
+      google_play:
+        credentials: $GPLAY_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true

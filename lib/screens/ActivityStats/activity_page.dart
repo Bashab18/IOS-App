@@ -1127,7 +1127,7 @@ class WeeklyLineChart extends StatelessWidget {
                 lineTouchData: LineTouchData(
                   handleBuiltInTouches: true,
                   touchTooltipData: LineTouchTooltipData(
-                    tooltipRoundedRadius: 6,
+                    tooltipBorderRadius: BorderRadius.circular(6),
                     fitInsideHorizontally: true,
                     fitInsideVertically: true,
                   ),
